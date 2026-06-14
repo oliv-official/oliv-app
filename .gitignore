@@ -13,9 +13,11 @@ static/dist/
 
 # Claude Code local config — machine-local settings + product strategy; keep private.
 .claude/
+CLAUDE.md
 
 # Environment
 .env
+MIGRATIONS.md
 
 # Editor / OS scratch
 .DS_Store
