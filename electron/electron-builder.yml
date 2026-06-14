@@ -67,3 +67,21 @@ linux:
 rpm:
   # fpm/rpmbuild fills these out; depends are the shared libs Electron needs.
   artifactName: ${name}-${version}.${arch}.${ext}
+
+# Windows is cross-built from this Linux host. Two prerequisites, both handled
+# outside this file: (1) the win32-x64 native binary must be parked first —
+# `npm run dist:win` runs scripts/setup-win-abi.js to do that; (2) electron's
+# .exe icon/version stamping (rcedit) needs Wine installed on the host.
+win:
+  target:
+    - nsis
+  icon: build/icon.ico
+  artifactName: ${name}-${version}-setup.${ext}
+
+nsis:
+  oneClick: false                       # assisted installer, not silent one-click
+  perMachine: false                     # per-user install, no admin prompt
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Oliv
