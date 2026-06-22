@@ -140,12 +140,18 @@
                 </tr>
             </thead>
             <tbody id="tx-tbody"></tbody>
+            <!-- Pagination row — client-side, 100 rows per page over the filtered
+                 rows. The whole footer row is hidden by JS whenever everything
+                 fits on a single page. -->
+            <tfoot>
+                <tr class="tx-footer-row" id="tx-footer-row" hidden>
+                    <td colspan="7">
+                        <div class="tx-pagination" id="tx-pagination"></div>
+                    </td>
+                </tr>
+            </tfoot>
         </table>
     </div>
-
-    <!-- Pagination — client-side, 100 rows per page over the filtered rows.
-         Hidden by JS whenever everything fits on a single page. -->
-    <div class="tx-pagination" id="tx-pagination" hidden></div>
 </div>
         </div>
     </div>

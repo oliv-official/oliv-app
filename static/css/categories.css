@@ -5,7 +5,8 @@
 
    Layout:
      • a "create" card pinned at the top — the page's single primary action;
-     • a 2×2 grid of type quadrants (Income · Expense · Savings · Investing).
+     • a four-column row of type quadrants (Income · Expense · Savings · Investing),
+       collapsing to two columns then one as the viewport narrows.
    Categories render as clean, container-less lines inside each quadrant.
    Reordering and recategorizing are drag-and-drop (grip handle, same as the
    Cash Flow column manager); the only other per-row control — a delete × —
@@ -96,11 +97,14 @@
 /* ─── Quadrant grid ──────────────────────────────────────────────────────── */
 .cat-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
 
-/* Collapse to a single column when the two-up layout would get cramped. */
+/* Step the four columns down as the layout gets cramped. */
+@media (max-width: 1100px) {
+  .cat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (max-width: 720px) {
   .cat-grid { grid-template-columns: 1fr; }
 }
@@ -124,11 +128,15 @@
 .cat-quadrant[data-type="savings"]   { --cat-accent: var(--accent-secondary); }
 .cat-quadrant[data-type="investing"] { --cat-accent: var(--accent-quatenary); }
 
+/* Negative horizontal margins pull the head out to the quadrant's inner edges
+   (cancelling its 16px padding) so the bottom rule spans the full width; the
+   matching horizontal padding keeps the title/count aligned with the rows. */
 .cat-quadrant-head {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-bottom: 8px;
+  margin: 0 -16px;
+  padding: 0 16px 8px;
   border-bottom: 1px solid var(--border);
 }
 

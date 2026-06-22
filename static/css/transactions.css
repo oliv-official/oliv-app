@@ -43,7 +43,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    margin: 24px 0 8px;
+    margin: 24px 0 4px;
     min-height: 32px;
 }
 
@@ -210,21 +210,6 @@
     min-width: 1100px;
 }
 
-/* Header row + body cells share the same column-divider treatment used by
-   the year-table .db-table in tables.css — 1px var(--border) on every
-   cell EXCEPT the first child of each row. Keeps the spreadsheet-like
-   visual rhythm consistent across the app. */
-.tx-table th,
-.tx-table td {
-    border-left: 1px solid var(--border);
-}
-
-.tx-table th:first-child,
-.tx-table td:first-child {
-    border-left: none;
-}
-
-
 /* ─── 2. Header row + column widths ──────────────────────────────────────── */
 /* The eyebrow treatment (colour, type, padding) is shared with .db-table th
    in tables.css (grouped there); this header only adds left alignment and a
@@ -232,6 +217,10 @@
 .tx-header-row th {
     text-align: left;
     border-bottom: 1px solid var(--border);
+}
+
+.tx-header-row th.tx-col-amount {
+    text-align: right;
 }
 
 /* Column widths — picked so a typical row reads cleanly without truncation.
@@ -1072,16 +1061,22 @@
 
 
 /* ─── 7. Pagination ──────────────────────────────────────────────────────────
-   Sits under the table: a "Showing X–Y of Z" caption on the left and the
-   prev / numbered / next controls on the right. Hidden (via the [hidden]
-   attribute, set in JS) whenever everything fits on one page. */
+   A dedicated footer row at the bottom of the table: a "Showing X–Y of Z"
+   caption on the left and the prev / numbered / next controls centered. The
+   whole <tr> is hidden (via the [hidden] attribute, set in JS) whenever
+   everything fits on one page. */
+.tx-footer-row td {
+    border-top: 1px solid var(--border);
+    padding: 12px 16px;
+}
+
+/* Three columns — info, controls, empty spacer — so the controls stay centered
+   in the row regardless of how wide the "Showing …" caption gets. */
 .tx-pagination {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
-    margin-top: 12px;
-    flex-wrap: wrap;
 }
 
 .tx-page-info {
@@ -1091,10 +1086,10 @@
 }
 
 .tx-page-controls {
+    grid-column: 2;
     display: flex;
     align-items: center;
     gap: 4px;
-    margin-left: auto;
 }
 
 .tx-page-btn,

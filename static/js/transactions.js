@@ -344,13 +344,14 @@ function txPageNumbers(current, total) {
 function txRenderPagination(totalVisible) {
     const el = document.getElementById('tx-pagination');
     if (!el) return;
+    const row = document.getElementById('tx-footer-row');
     const pages = txPageCount(totalVisible);
     if (totalVisible === 0 || pages <= 1) {
-        el.hidden = true;
+        if (row) row.hidden = true;
         el.innerHTML = '';
         return;
     }
-    el.hidden = false;
+    if (row) row.hidden = false;
     const page  = txState.page;
     const start = (page - 1) * TX_PAGE_SIZE + 1;
     const end   = Math.min(page * TX_PAGE_SIZE, totalVisible);
