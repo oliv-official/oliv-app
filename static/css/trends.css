@@ -198,6 +198,7 @@
     cursor: help;
     position: relative;
     vertical-align: middle;
+    top: -1px;
     transition: color 0.15s, border-color 0.15s;
 }
 .fc-info:hover, .fc-info:focus-visible { color: var(--text-primary); border-color: var(--text-primary); outline: none; }
