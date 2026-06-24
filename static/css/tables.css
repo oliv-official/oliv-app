@@ -502,24 +502,26 @@
 }
 
 /* == ⋮ table options menu button (shared across all spreadsheet pages) ==
-   Skinned like the Transactions Import/Export buttons (transactions.css):
-   same surface, border, radius, colours and hover. Same height too — their
-   15px text line + 10px vertical padding + 1px borders render at 37px, so
-   the glyph's line box is pinned to 15px and min-width keeps the button at
-   least square (a lone ⋮ is far narrower than a text label). */
+   A circular icon button sized on the 4px grid: a --control-height (32px = 8×4)
+   square turned into a circle with border-radius:50%. The ⋮ glyph is centred by
+   the flex box, so the button needs no padding and no margin (both stay on the
+   grid at 0). Surface/border/colours/hover still match the other eyebrow
+   controls (Transactions Import/Export, etc.). */
 .p-menu-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 37px;
-    padding: 10px 0;
-    border-radius: 5px;
+    width: var(--control-height);
+    height: var(--control-height);
+    padding: 0;
+    margin: 0;
+    border-radius: 50%;
     background: var(--surface1);
     border: 1px solid var(--border);
     color: var(--text-secondary);
     font-family: var(--font-menu);
     font-size: var(--size-h3);
-    line-height: 15px;
+    line-height: 1;
     cursor: pointer;
     transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
