@@ -170,10 +170,10 @@
 
 /* ─── 1b. Chip row + search popover ──────────────────────────────────────────
    The row between the page header and the table. It has NO container
-   background — chips sit directly on the page. The left group is reserved for
-   quick-sort pills; the right group holds filter/sort chips (currently just
-   the search trigger). The search filters themselves live in a popover that
-   drops down from the magnifying-glass chip. */
+   background — chips sit directly on the page. The left group holds the search
+   trigger (pinned to the far left of the table) and the lone Uncategorized
+   quick filter; the right group holds the action chips. The search filters
+   themselves live in a popover that drops down from the magnifying-glass chip. */
 .tx-chips {
     display: flex;
     align-items: center;
@@ -190,12 +190,14 @@
     gap: 8px;
 }
 
-/* Generic chip shell. Left-group quick-filter pills stay fully rounded; the
-   right group (action chips + search trigger) is squared off below. */
+/* Generic chip shell. The icon chips (action chips + search trigger) and the
+   Uncategorized quick filter are squared off below; nothing else uses the base
+   pill radius now, but it's kept as the fallback shape. */
 .tx-chip {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    /* 32px — on the 4px spacing scale (= --control-height). */
     height: 32px;
     padding: 0 12px;
     border: 1px solid var(--border);
@@ -217,8 +219,12 @@
     background: var(--frost-3);
 }
 
-/* Right group = rounded squares (action chips + the search trigger). */
-.tx-chips-right .tx-chip {
+/* Rounded squares: the icon chips (action chips + the search trigger, wherever
+   they sit in the row) and the Uncategorized quick filter all share this shape,
+   so the Uncategorized pill matches the chips beside it instead of reading as a
+   fully-rounded pill. */
+.tx-chip-icon,
+.tx-quick-uncat {
     border-radius: 8px;
 }
 
@@ -250,7 +256,8 @@
     background: color-mix(in srgb, var(--accent-info) 12%, transparent);
 }
 
-/* Icon-only chip (the magnifying glass) — square footprint. */
+/* Icon-only chip (the magnifying glass) — square footprint, so its width
+   tracks the chip height above. */
 .tx-chip-icon {
     width: 32px;
     padding: 0;
@@ -278,7 +285,10 @@
 .tx-search-popover {
     position: absolute;
     top: calc(100% + 8px);
-    right: 0;
+    /* Anchored to the LEFT of the trigger so it drops straight down and opens
+       rightward — the chip now lives at the far left of the table, so a
+       right:0 anchor would push the popover off the left edge. */
+    left: 0;
     z-index: 60;
     display: flex;
     flex-direction: column;

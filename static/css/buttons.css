@@ -89,6 +89,13 @@
     align-items: center;
     justify-content: center;
     gap: var(--space-8);
+    /* Fixed height on the 4px grid (= --control-height) instead of letting the
+       box grow intrinsically to ~33px. box-sizing:border-box makes the height
+       authoritative whether the class lands on a <button> or an <a>; the 8px
+       top/bottom padding is then absorbed into the 32px box (text still clears
+       it). Keeps these buttons aligned with the 32px chips/inputs. */
+    box-sizing: border-box;
+    height: var(--control-height);
     border: 1px solid var(--border);
     border-radius: 6px;
     font-family: var(--font-menu);
