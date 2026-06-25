@@ -274,6 +274,14 @@
     /* Vertical padding inside every editable cell input — keeps row heights
        consistent across the spreadsheet pages. */
     --cell-pad-y: var(--space-12);
+
+    /* Elevation drop shadow shared by every raised content surface: the report/
+       summary cards, the table wrapper, dropdown menus, and info tooltips. One
+       token so they all read at the same elevation. The sidebar nav keeps its
+       own downward shadow (it casts vertically, not as a floating card) and
+       modals keep their heavier overlay shadow. Theme-independent — shadows are
+       black in both light and dark. */
+    --shadow-card: 0 0px 5px rgba(0, 0, 0, 0.2);
 }
 
 /* Compact display density (Settings → Appearance). Tightens the spreadsheet

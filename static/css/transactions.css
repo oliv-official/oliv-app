@@ -304,7 +304,7 @@
     background: var(--dialog-surface);
     border: 1px solid var(--dialog-stroke);
     border-radius: 10px;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-card);
 }
 
 /* display:flex above otherwise beats the UA [hidden]{display:none} rule. */

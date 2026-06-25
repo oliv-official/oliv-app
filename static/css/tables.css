@@ -180,7 +180,7 @@
 
 .db-outer.collapsed .db-forehead {
     border-radius: 8px;
-    box-shadow: 0px 5px 5px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-card);
 }
 
 /* The ⋮ options menu acts on the table's contents, which are hidden while
@@ -202,7 +202,7 @@
        items (.nav li a) so those three surfaces read the same. */
     border-radius: 8px;
     background-color: var(--surface1);
-    box-shadow: 0px 5px 5px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-card);
     overflow-x: auto;
 }
 

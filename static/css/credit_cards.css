@@ -49,7 +49,7 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--surface1);
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-card);
     padding: 20px 24px 22px;
     display: flex;
     flex-direction: column;
