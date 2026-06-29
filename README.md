@@ -1,11 +1,6 @@
 # Oliv
 
-**A local-first, private personal-finance app — a super-charged spreadsheet for your money.**
-
-Oliv is an open-source, offline desktop app for people who want spreadsheet-level
-control over their finances without spreadsheet-level busywork. Track your accounts,
-forecast your cash flow, manage your portfolio, and grow your net worth — all on your
-own machine, with no cloud account, no subscription, and no one watching.
+**Oliv is an offline and private finance app for people who want a money management suite without worrying about accounts and subscriptions.**
 
 I built Oliv out of a personal need. I had been using a very large spreadsheet
 to manage all of my finanaces, accounts, and investing goals for over 7 years. It got 
@@ -22,8 +17,7 @@ my method of money management to improve their financial situation.
 ## Why Oliv
 
 - **Local & private by design.** Your data lives in a single SQLite file on your
-  computer. There is no server, no socket, no open port, and nothing is sent anywhere.
-  The app talks to its own in-process backend over a single internal channel.
+  computer. There is no account, no server, no telemetry. 
 - **Optional at-rest encryption.** Databases can be encrypted with SQLCipher at
   creation time; encrypted files start locked and require your passphrase to open. The
   passphrase is never written to disk.
@@ -31,23 +25,6 @@ my method of money management to improve their financial situation.
 - **Beyond budgeting.** Oliv is built for budgeting *and* wealth management — from
   monthly cash flow all the way to tracking and optimizing capital over the years.
 
-## Features
-
-- **Cash Flow** — month-by-month income & expense tracking across categories, with
-  per-category, per-year **sync** so a category can be auto-computed from your actual
-  transactions in one year and hand-entered in another.
-- **Transactions** — a full ledger with import (CSV/OFX/QFX/QIF), chunked export with a
-  real progress bar, and **learned auto-categorization**: assign a category once and
-  Oliv remembers the rule, applying it to future matching transactions (exact matches
-  always, fuzzy matches in fuzzy mode).
-- **Balance Sheet** — assets and liabilities laid out year over year.
-- **Budget** — set targets and track against them.
-- **Cash Flow Forecast** — projections, including recurring-expense detection.
-- **Credit Cards** — track cards and their recent-active-months spend average.
-- **Portfolio** — investment accounts and holdings, with finiteness-checked amounts and
-  prices.
-- **Spending Trends** & **Report Card** — see where your money goes and how you're doing.
-- **Settings** — themes, currency, zoom, category management, and database management.
 
 ## Install
 
