@@ -3,18 +3,20 @@
 // ─── settingsCategories.js ──────────────────────────────────────────────────
 // Categories editor for the Categories page (pages/categories.html).
 //
-// Layout: a 2×2 grid of quadrants — one per category type (Income · Expense ·
-// Savings · Investing). Each quadrant lists its categories as clean,
-// container-less lines, and its header carries a green "+" button that drops a
-// fresh "New Category" into that box, ready to rename.
+// Layout: a search field above a stack of collapsible group cards — one per
+// category type (Income · Expense · Savings · Investing). Each card header
+// carries the type's colour dot, a count summary ("8 categories · 5 fixed ·
+// 3 flex") and a chevron; expanding it reveals the category rows and a quiet
+// "Add category" row at the bottom. Typing in the search filters rows by name
+// across every group: groups with no matches disappear, matching groups are
+// forced open, and adding/dragging pause until the query is cleared (a
+// filtered list has no meaningful insertion order).
 //
-// Reordering and recategorizing are both **drag-and-drop** — the same grip-
-// handle interaction as the Cash Flow column manager (tables.js). Drag a
-// category to a new spot within its box to reorder it; drag it into a different
-// type box to recategorize it. The only per-row chrome left is the grip (always
-// visible) and a delete × that fades in on hover, so a full screen of
-// categories reads calmly. (Sync is configured per table on the Cash Flow page,
-// not here.)
+// Rows keep the established interactions: inline rename (borderless input),
+// a Fixed/Flex/Goal segmented toggle, an always-visible quiet delete ×, and
+// the grip-handle drag-and-drop from the Cash Flow column manager (tables.js)
+// — drag within a group to reorder (the order sets Cash Flow row order), drag
+// into another open group to recategorize.
 //
 // One source of truth for the category vocabulary used across:
 //   • Transactions ledger dropdown
@@ -23,7 +25,9 @@
 // All state changes round-trip through the /api/categories endpoints, then
 // re-render from scratch on success — same approach as the year-table
 // column manager. Cheaper to rebuild than to surgically patch individual
-// rows, and avoids bookkeeping drift between the DOM and the data.
+// rows, and avoids bookkeeping drift between the DOM and the data. (The one
+// exception is the flex-type toggle, patched in place so focus stays on the
+// segment the user just clicked.)
 
 (function () {
 
@@ -75,7 +79,8 @@
 
     // ── Render ──────────────────────────────────────────────────────────────
     // Categories are grouped by type so the editor mirrors the Cash Flow table
-    // layout. Each box is a drop target; a row's box dictates its type.
+    // layout. Each group's list is a drop target; a row's group dictates its
+    // type.
 
     const TYPE_ORDER = ['income', 'expense', 'savings', 'investing'];
     const TYPE_LABEL = {
@@ -107,8 +112,10 @@
         ['flex',  'Flex'],
         ['goal',  'Goal'],
     ];
-    const ICON_X    = '<svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-    const ICON_PLUS = '<svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+    const ICON_X       = '<svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+    const ICON_PLUS    = '<svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+    const ICON_SEARCH  = '<svg class="cat-search-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+    const ICON_CHEVRON = '<svg class="cat-group-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
     // Default name for a freshly added category. The create endpoint rejects
     // duplicate names (409), so if "New Category" is already taken — e.g. the
@@ -123,56 +130,66 @@
         return `${DEFAULT_NAME} ${n}`;
     }
 
-    // The flex-type dropdown for a row — a compact native <select> showing the
-    // category's spend character. Sits between the name and the delete ×; unlike
-    // the delete it's always visible, since it carries a real value. Selecting a
-    // value PUTs flex_type (see the change handler in attach()).
-    function flexSelectHtml(c) {
-        const opts = FLEX_TYPES.map(([val, label]) =>
-            `<option value="${val}"${c.flex_type === val ? ' selected' : ''}>${label}</option>`
-        ).join('');
-        return `<select class="cat-flex-type" data-action="flextype"
-                        aria-label="Cost type for ${esc(c.name)}">${opts}</select>`;
+    // The flex-type segmented toggle for a row — three buttons in a pill, the
+    // stored value carrying the checked tint (same idiom as the Exact/Fuzzy
+    // toggle in Settings). Clicking a segment PUTs flex_type (see the click
+    // handler in attach()).
+    function segHtml(c) {
+        const btns = FLEX_TYPES.map(([val, label]) => {
+            const active = c.flex_type === val;
+            return `<button type="button" class="cat-seg-btn${active ? ' is-active' : ''}"
+                            data-action="flextype" data-value="${val}"
+                            aria-pressed="${active}">${label}</button>`;
+        }).join('');
+        return `<div class="cat-seg" role="group" aria-label="Cost type for ${esc(c.name)}">${btns}</div>`;
     }
 
     function rowHtml(c) {
-        // A clean, container-less line: [grip] [name] [flex-type] [delete]. Only
-        // the grip is draggable, so the rename input and the dropdown keep their
-        // pointer events. The delete × is revealed by CSS on row hover /
-        // focus-within so a full box stays calm at rest; the grip stays faintly
-        // visible to advertise the drag.
+        // A clean line: [grip] [name] [flex-type segments] [delete]. Only the
+        // grip is draggable, so the rename input and the toggle keep their
+        // pointer events. Every category — including the seeded defaults — can
+        // be renamed, retyped and deleted; nothing is locked.
         return `
             <div class="cat-row" data-id="${c.id}">
                 <span class="cat-grip" draggable="true" aria-label="Drag ${esc(c.name)} to reorder or recategorize">${ICON_GRIP}</span>
                 <input type="text" class="cat-name" value="${esc(c.name)}" maxlength="100"
                        data-action="rename" aria-label="Category name">
-                ${flexSelectHtml(c)}
-                <div class="cat-row-actions">
-                    <button class="cat-icon-btn cat-delete" data-action="delete" title="Delete category" aria-label="Delete category">${ICON_X}</button>
-                </div>
+                ${segHtml(c)}
+                <button class="cat-icon-btn cat-delete" data-action="delete" title="Delete category" aria-label="Delete ${esc(c.name)}">${ICON_X}</button>
             </div>
         `;
     }
 
-    function quadrantHtml(type, rows) {
+    // Header count summary: total plus a count per spend character, zeroes
+    // omitted ("8 categories · 5 fixed · 3 flex").
+    function metaText(rows) {
+        const n = rows.length;
+        const parts = [`${n} ${n === 1 ? 'category' : 'categories'}`];
+        for (const [val, label] of FLEX_TYPES) {
+            const k = rows.filter(c => c.flex_type === val).length;
+            if (k) parts.push(`${k} ${label.toLowerCase()}`);
+        }
+        return parts.join(' · ');
+    }
+
+    function groupHtml(type, rows, isOpen) {
         const items = rows.map(rowHtml).join('') ||
             '<div class="cat-empty" data-placeholder>No categories yet</div>';
-        // Each type gets its own card and acts as a drop target (data-type on
-        // the list). The title renders as a coloured pill (colour-on-tinted-box)
-        // reusing the Transactions ledger type-pill look; the colour comes from
-        // the [data-type] hook in categories.css. The header's green "+" button
-        // (the global accent action shape) is the page's only way to create a
-        // category — it adds one to this box. Icon-only, so the descriptive
-        // intent lives in title/aria-label.
+        const bodyId = `cat-group-body-${type}`;
         return `
-            <section class="cat-quadrant" data-type="${type}">
-                <header class="cat-quadrant-head">
-                    <h2 class="cat-quadrant-title">${TYPE_LABEL[type]}</h2>
-                    <button type="button" class="cat-add-btn cat-quadrant-add"
-                            title="Add ${TYPE_LABEL[type]} category"
-                            aria-label="Add ${TYPE_LABEL[type]} category">${ICON_PLUS}</button>
-                </header>
-                <div class="cat-list" data-type="${type}">${items}</div>
+            <section class="cat-group" data-type="${type}">
+                <button type="button" class="cat-group-head" data-action="toggle"
+                        aria-expanded="${isOpen}" aria-controls="${bodyId}">
+                    <span class="cat-group-dot" aria-hidden="true"></span>
+                    <span class="cat-group-title">${TYPE_LABEL[type]}</span>
+                    <span class="cat-group-meta">${metaText(rows)}</span>
+                    ${ICON_CHEVRON}
+                </button>
+                <div class="cat-group-body" id="${bodyId}"${isOpen ? '' : ' hidden'}>
+                    <div class="cat-list" data-type="${type}">${items}</div>
+                    <button type="button" class="cat-add-row" data-type="${type}"
+                            aria-label="Add ${TYPE_LABEL[type]} category">${ICON_PLUS} Add category</button>
+                </div>
             </section>
         `;
     }
@@ -180,20 +197,74 @@
     // Last server state, kept so a drop can diff the new DOM order against it
     // and PUT only the rows whose position or type actually changed.
     const stateByRoot = new WeakMap();
+    // Per-root view state — search query + which groups are expanded. Survives
+    // re-renders (session-only, like the old active tab).
+    const uiByRoot = new WeakMap();
+
+    function ui(rootEl) {
+        let u = uiByRoot.get(rootEl);
+        if (!u) {
+            u = { query: '', open: { income: false, expense: true, savings: false, investing: false } };
+            uiByRoot.set(rootEl, u);
+        }
+        return u;
+    }
 
     function render(rootEl, rows) {
         stateByRoot.set(rootEl, rows);
         const groups = groupByType(rows);
-        // The 2×2 type grid is the whole editor now — each quadrant header owns
-        // its own "+ Add" button. The grid's DOM order is TYPE_ORDER, which is
-        // also the global-position order we write back on a drop.
+        const u = ui(rootEl);
+
+        const sections = TYPE_ORDER.map(t => groupHtml(t, groups[t], u.open[t])).join('');
+
         rootEl.innerHTML =
-            `<div class="cat-grid">
-                ${quadrantHtml('income',    groups.income)}
-                ${quadrantHtml('expense',   groups.expense)}
-                ${quadrantHtml('savings',   groups.savings)}
-                ${quadrantHtml('investing', groups.investing)}
-            </div>`;
+            `<div class="cat-search">
+                ${ICON_SEARCH}
+                <input type="text" class="cat-search-input" placeholder="Search categories"
+                       aria-label="Search categories" value="${esc(u.query)}">
+            </div>
+            <div class="cat-groups">${sections}</div>
+            <p class="cat-no-match" hidden>No categories match your search.</p>`;
+
+        applyFilter(rootEl);
+    }
+
+    // Re-evaluate the search query against the rendered rows. Pure view logic —
+    // no server round-trip — so it runs on every keystroke and after every
+    // re-render. A live query hides non-matching rows, drops groups with no
+    // hits entirely, forces matching groups open, and pauses add/drag (both
+    // depend on the full, unfiltered order being visible).
+    function applyFilter(rootEl) {
+        const u = ui(rootEl);
+        const q = u.query.trim().toLowerCase();
+        const searching = q.length > 0;
+        rootEl.classList.toggle('cat-searching', searching);
+
+        let anyVisible = false;
+        rootEl.querySelectorAll('.cat-group').forEach(section => {
+            const type = section.dataset.type;
+            let matches = 0;
+            section.querySelectorAll('.cat-row').forEach(row => {
+                const name = (row.querySelector('.cat-name')?.value || '').toLowerCase();
+                const hit = !searching || name.includes(q);
+                row.hidden = !hit;
+                if (hit) matches++;
+            });
+
+            section.hidden = searching && matches === 0;
+            if (!section.hidden) anyVisible = true;
+
+            const open = searching ? true : u.open[type];
+            section.querySelector('.cat-group-head').setAttribute('aria-expanded', String(open));
+            const body = section.querySelector('.cat-group-body');
+            if (open) body.removeAttribute('hidden');
+            else      body.setAttribute('hidden', '');
+
+            const addBtn = section.querySelector('.cat-add-row');
+            if (addBtn) addBtn.hidden = searching;
+        });
+
+        rootEl.querySelector('.cat-no-match').hidden = anyVisible;
     }
 
     // ── Event wiring ────────────────────────────────────────────────────────
@@ -224,10 +295,52 @@
     }
 
     function attach(rootEl) {
-        // ── Click: delete X, add button ──────────────────────────────────────
+        // ── Click: group toggle, flex-type segment, delete ×, add row ────────
         rootEl.addEventListener('click', async (e) => {
             const action = e.target.closest('[data-action]')?.dataset?.action;
-            const addBtn = e.target.closest('.cat-add-btn');
+            const addBtn = e.target.closest('.cat-add-row');
+
+            // Group header — expand/collapse. A live search forces matching
+            // groups open (applyFilter wins), so the stored preference only
+            // takes effect once the query is cleared.
+            if (action === 'toggle') {
+                const section = e.target.closest('.cat-group');
+                const type = section?.dataset?.type;
+                if (!type) return;
+                const u = ui(rootEl);
+                u.open[type] = !u.open[type];
+                applyFilter(rootEl);
+                return;
+            }
+
+            // Flex-type segment. Patched in place (segment classes + the group
+            // header counts) instead of re-rendering, so focus stays on the
+            // button the user just clicked.
+            if (action === 'flextype') {
+                const btn = e.target.closest('[data-action="flextype"]');
+                const row = btn.closest('.cat-row');
+                const id  = row && parseInt(row.dataset.id, 10);
+                const value = btn.dataset.value;
+                if (!id || btn.classList.contains('is-active')) return;
+                try {
+                    await apiUpdate(id, { flex_type: value });
+                    const snap = (stateByRoot.get(rootEl) || []).find(c => c.id === id);
+                    if (snap) snap.flex_type = value;
+                    row.querySelectorAll('.cat-seg-btn').forEach(b => {
+                        const active = b.dataset.value === value;
+                        b.classList.toggle('is-active', active);
+                        b.setAttribute('aria-pressed', String(active));
+                    });
+                    const section = row.closest('.cat-group');
+                    const groups = groupByType(stateByRoot.get(rootEl) || []);
+                    section.querySelector('.cat-group-meta').textContent =
+                        metaText(groups[section.dataset.type]);
+                } catch (err) {
+                    alert(err.message);
+                    await refresh(rootEl);
+                }
+                return;
+            }
 
             if (action === 'delete') {
                 const row = e.target.closest('.cat-row');
@@ -244,11 +357,11 @@
                 return;
             }
 
-            // A quadrant's "+ Add" button drops a fresh "New Category" into that
-            // box (its data-type) and lands the cursor in the new row's name,
-            // text selected, so the user renames it immediately.
+            // Quiet "Add category" row at the bottom of each open group. Only
+            // rendered reachable while the group is expanded and no search is
+            // active, so the fresh row is always visible for the rename focus.
             if (addBtn) {
-                const type = addBtn.closest('.cat-quadrant')?.dataset.type;
+                const type = addBtn.dataset.type;
                 if (!type) return;
                 const name = uniqueDefaultName(stateByRoot.get(rootEl) || []);
                 try {
@@ -261,6 +374,13 @@
                     alert(err.message);
                 }
             }
+        });
+
+        // ── Search — filter on every keystroke, no round-trip ────────────────
+        rootEl.addEventListener('input', (e) => {
+            if (!e.target.matches('.cat-search-input')) return;
+            ui(rootEl).query = e.target.value;
+            applyFilter(rootEl);
         });
 
         // ── Rename on blur ───────────────────────────────────────────────────
@@ -277,41 +397,23 @@
             try {
                 await apiUpdate(id, { name: newName });
                 target.defaultValue = newName;
+                // Keep the snapshot's name in step (search + uniqueDefaultName
+                // both read it).
+                const snap = (stateByRoot.get(rootEl) || []).find(c => c.id === id);
+                if (snap) snap.name = newName;
             } catch (err) {
                 alert(err.message);
                 await refresh(rootEl);
             }
         }, true);   // capture phase so blur reaches the root
 
-        // ── Flex-type change ─────────────────────────────────────────────────
-        // The per-row dropdown commits immediately on change. On failure we
-        // re-render from server state, which restores the select to its stored
-        // value (same revert strategy as rename).
-        rootEl.addEventListener('change', async (e) => {
-            const sel = e.target.closest('.cat-flex-type');
-            if (!sel) return;
-            const row = sel.closest('.cat-row');
-            const id  = row && parseInt(row.dataset.id, 10);
-            if (!id) return;
-            try {
-                await apiUpdate(id, { flex_type: sel.value });
-                // Keep the in-memory snapshot in step so a later drag diff
-                // doesn't see a stale flex_type (it diffs position/type only,
-                // but the snapshot should still reflect the truth).
-                const snap = (stateByRoot.get(rootEl) || []).find(c => c.id === id);
-                if (snap) snap.flex_type = sel.value;
-            } catch (err) {
-                alert(err.message);
-                await refresh(rootEl);
-            }
-        });
-
         // ── Drag-and-drop reorder + recategorize ─────────────────────────────
         // The grip is the draggable element; the source row stays put (dimmed)
         // during the drag while an accent line marks the drop slot. On dragend
         // we land the row at the indicator, then read the final DOM order across
-        // every box — a row's box dictates its new type — and PUT just the rows
-        // whose position or type changed.
+        // every group — a row's group dictates its new type — and PUT just the
+        // rows whose position or type changed. Collapsed groups aren't drop
+        // targets (their lists are hidden); expand a group to drag into it.
         let draggingRow = null;
         let indicator   = null;
 
@@ -325,7 +427,7 @@
         };
 
         const commitOrder = async () => {
-            // Walk the boxes in DOM order (= TYPE_ORDER) and assign contiguous
+            // Walk the groups in DOM order (= TYPE_ORDER) and assign contiguous
             // global positions 0..N-1, matching the backend's position model.
             const desired = [];
             let pos = 0;
@@ -359,13 +461,16 @@
         rootEl.addEventListener('dragstart', (e) => {
             const grip = e.target.closest?.('.cat-grip');
             if (!grip) return;
+            // A filtered list shows a partial order — reordering it would
+            // commit positions the user can't see. Clear the search first.
+            if (ui(rootEl).query.trim()) { e.preventDefault(); return; }
             draggingRow = grip.closest('.cat-row');
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', draggingRow.dataset.id); // Firefox needs a payload
             e.dataTransfer.setDragImage(draggingRow, 12, 12);
             // Defer dimming + drag mode so the drag image isn't the faded row.
-            // `dragging` on the editor hides empty-box placeholders (CSS) so the
-            // accent line is the only placement cue.
+            // `dragging` on the editor hides empty-group placeholders (CSS) so
+            // the accent line is the only placement cue.
             requestAnimationFrame(() => {
                 draggingRow.classList.add('cat-dragging');
                 rootEl.classList.add('dragging');
