@@ -12,12 +12,17 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-// Isolated data dir BEFORE main.js computes it from userData.
+// Isolated data dir — set AFTER requiring main.js, not before: main.js
+// re-points userData at the shared 'oliv-dev' profile at require time (dev
+// isolation from the packaged build), which silently clobbers any earlier
+// setPath and sends every write from this script into the REAL dev database.
+// startBackend derives OLIV_DATA_DIR from userData only at app.whenReady, so
+// overriding here (post-require, pre-ready) is what actually isolates us.
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'fl-e2e-'));
 const { app, BrowserWindow } = require('electron');
-app.setPath('userData', tmp);
 
 require('../main.js'); // the real entry: backend, protocol, window
+app.setPath('userData', tmp);
 
 const DEADLINE_MS = 20000;
 
@@ -101,8 +106,11 @@ app.whenReady().then(async () => {
       '/spending-trends': 'Spending Trends',
       '/report-card':     'Report Card',
     };
+    // Routes still served but with their sidebar link commented out (Budget —
+    // feature rollback, 9b919bd): the chrome must land, but no link is active.
+    const unlinked = new Set(['/budget']);
     for (const [route, name] of Object.entries(routes)) {
-      const activeHref = route;
+      const activeHref = unlinked.has(route) ? null : route;
       await win.loadURL(`app://oliv${route}`);
       const ok = await evalJs(`document.title.includes(${JSON.stringify(name)})
         && !!document.querySelector(".titlebar")
@@ -131,14 +139,15 @@ app.whenReady().then(async () => {
     ));
 
     // Category management now lives on its own page — prove the editor renders
-    // the 2×2 type grid (one quadrant per type), each quadrant's own "+" add
-    // button, and the seeded category rows. The editor fills asynchronously
-    // after load, so poll briefly like the tx table.
+    // the search field, the four collapsible type groups, each group's "Add
+    // category" row, and the seeded category rows. The editor fills
+    // asynchronously after load, so poll briefly like the tx table.
     await win.loadURL('app://oliv/categories');
     check('Categories page renders the editor', await evalJs(
       'new Promise(res => setTimeout(() => res('
-        + 'document.querySelectorAll("[data-categories-editor] .cat-quadrant").length === 4'
-        + ' && document.querySelectorAll("[data-categories-editor] .cat-quadrant-add").length === 4'
+        + 'document.querySelectorAll("[data-categories-editor] .cat-group").length === 4'
+        + ' && document.querySelectorAll("[data-categories-editor] .cat-add-row").length === 4'
+        + ' && !!document.querySelector("[data-categories-editor] .cat-search-input")'
         + ' && document.querySelectorAll("[data-categories-editor] .cat-row").length > 0'
         + '), 800))'
     ));

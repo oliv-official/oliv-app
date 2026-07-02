@@ -445,7 +445,7 @@
     letter-spacing: normal;
     text-transform: none;
     text-align: left;
-    white-space: normal;
+    white-space: pre-line;
     opacity: 0;
     visibility: hidden;
     transform: translateY(-3px);

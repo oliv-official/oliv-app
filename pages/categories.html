@@ -18,13 +18,14 @@
     <div class="cat-page-header">
         <div>
             <h1 class="page-title">Categories<span class="fc-info" tabindex="0" role="note"
-                aria-label="Define the categories for your Cash Flow statement and transactions. Drag a category by its handle to reorder it, or into another box to change its type. Deletion is blocked when transactions or stored values still reference a category — reassign first. (Sync is set per table on the Cash Flow page.)"
-                data-tip="Define the categories for your Cash Flow statement and transactions. Drag a category by its handle to reorder it, or into another box to change its type. Deletion is blocked when transactions or stored values still reference a category — reassign first. (Sync is set per table on the Cash Flow page.)">i</span></h1>
+                aria-label="Categories group your transactions and appear as rows in your Cash Flow statement. Drag a category by its handle to reorder it — the order here sets the row order on the Cash Flow page. Fixed: consistent recurring costs like rent or subscriptions. Flex: variable day-to-day spending like groceries or dining. Goal: a targeted amount to reach, like a vacation fund. Deletion is blocked when transactions or stored values still reference a category — reassign first."
+                data-tip="Categories group your transactions and appear as rows in your Cash Flow statement. Drag a category by its handle to reorder it — the order here sets the row order on the Cash Flow page.&#10;&#10;Fixed — consistent recurring costs (rent, subscriptions). Flex — variable day-to-day spending (groceries, dining). Goal — a targeted amount to reach (vacation fund, new laptop).&#10;&#10;Deletion is blocked when transactions or stored values still reference a category — reassign first.">i</span></h1>
         </div>
     </div>
 
-    <!-- The whole editor — a 2×2 grid of type quadrants (Income · Expense ·
-         Savings · Investing), each with its own "+" add button — is rendered by
+    <!-- The whole editor — a search field above collapsible group cards
+         (Income · Expense · Savings · Investing), each with its rows and an
+         "Add category" footer — is rendered by
          static/js/shell/settingsCategories.js into [data-categories-editor]. -->
     <div class="cat-page-editor" data-categories-editor></div>
 </div>
